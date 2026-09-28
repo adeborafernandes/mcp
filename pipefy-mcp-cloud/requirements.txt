@@ -1,0 +1,1 @@
+pipefy-mcp-server==0.5.2b1
