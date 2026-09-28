@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-: "${MCP_AUTH_TOKEN:?MCP_AUTH_TOKEN nao definido}"
+if [ -z "$MCP_AUTH_TOKEN" ] && [ -z "$WORKOS_AUTHKIT_DOMAIN" ]; then echo "Defina WORKOS_AUTHKIT_DOMAIN (OAuth) ou MCP_AUTH_TOKEN" >&2; exit 1; fi
 
 # Upstream apenas em loopback; so o proxy (com Bearer) fica exposto.
 export PIPEFY_MCP_TRANSPORT=http
