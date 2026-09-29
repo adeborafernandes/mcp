@@ -7,7 +7,7 @@ Funciona no claude.ai (web/desktop/celular), Claude Code e outros clientes MCP.
 1. Crie um projeto e ative **AuthKit**. Anote o domínio: `https://SEU-SUBDOMINIO.authkit.app`.
 2. **Connect → Configuration**: ative **Client ID Metadata Document (CIMD)** e também
    **Dynamic Client Registration** (compatibilidade com o claude.ai).
-3. Adicione como **Resource Indicator** a URL exata do servidor, ex.: `https://SEU-APP.fly.dev/mcp`.
+3. Adicione como **Resource Indicator** a URL exata do servidor, ex.: `https://mcp-pipefy.fly.dev/mcp`.
 4. Ative login com Google e **MFA**.
 
 ## 2. Deploy
@@ -16,7 +16,7 @@ cd pipefy-mcp-cloud
 fly launch --no-deploy --copy-config        # ajuste o nome do app em fly.toml
 fly secrets set \
   WORKOS_AUTHKIT_DOMAIN=https://SEU-SUBDOMINIO.authkit.app \
-  MCP_PUBLIC_URL=https://SEU-APP.fly.dev/mcp \
+  MCP_PUBLIC_URL=https://mcp-pipefy.fly.dev/mcp \
   MCP_ALLOWED_EMAILS=voce@exemplo.com \
   PIPEFY_SERVICE_ACCOUNT_CLIENT_ID=... \
   PIPEFY_SERVICE_ACCOUNT_CLIENT_SECRET=...
@@ -28,16 +28,16 @@ Se o token não trouxer o claim `email`, veja o `sub` nos logs (`fly logs`, linh
 
 ## 3. Conectar
 - **claude.ai / celular:** Configurações → Conectores → Adicionar conector personalizado →
-  `https://SEU-APP.fly.dev/mcp` → faça login. Uma vez; vale para todos os dispositivos da conta.
-- **Claude Code:** `claude mcp add --transport http pipefy https://SEU-APP.fly.dev/mcp`
+  `https://mcp-pipefy.fly.dev/mcp` → faça login. Uma vez; vale para todos os dispositivos da conta.
+- **Claude Code:** `claude mcp add --transport http pipefy https://mcp-pipefy.fly.dev/mcp`
   e autentique via `/mcp`. (Alternativa: `MCP_AUTH_TOKEN` + `--header "Authorization: Bearer ..."`.)
 
 ## Testes
 ```bash
 pip install -r requirements.txt pytest && python -m pytest tests
-curl -i https://SEU-APP.fly.dev/healthz                                   # 200
-curl -i https://SEU-APP.fly.dev/mcp                                       # 401 + WWW-Authenticate
-curl https://SEU-APP.fly.dev/.well-known/oauth-protected-resource/mcp     # metadados
+curl -i https://mcp-pipefy.fly.dev/healthz                                   # 200
+curl -i https://mcp-pipefy.fly.dev/mcp                                       # 401 + WWW-Authenticate
+curl https://mcp-pipefy.fly.dev/.well-known/oauth-protected-resource/mcp     # metadados
 ```
 
 ## Segurança / notas

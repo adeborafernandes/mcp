@@ -1,4 +1,4 @@
-app = "pipefy-mcp-CHANGE-ME"
+app = "mcp-pipefy"
 primary_region = "gru"
 
 [build]
