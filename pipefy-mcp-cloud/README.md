@@ -40,6 +40,43 @@ curl -i https://mcp-pipefy.fly.dev/mcp                                       # 4
 curl https://mcp-pipefy.fly.dev/.well-known/oauth-protected-resource/mcp     # metadados
 ```
 
+## Incidentes de produção (e correções já incluídas no código)
+
+**#1 — 403 "usuario nao permitido".** O token do WorkOS pode vir **sem a claim `email`**.
+`fly logs` mostra `usuario nao permitido: sub=user_01... email=(ausente)`. Correção, sem novo deploy:
+```bash
+fly secrets set MCP_ALLOWED_SUBS="user_01XXXXXXXX"
+```
+Se o provedor não garante `email`, prefira `MCP_ALLOWED_SUBS` desde o início.
+
+**#2 — `TypeError: Invalid "auth" argument` nas chamadas ao Pipefy.** O `gql.transport.httpx`
+faz `import httpx2 as httpx` quando `httpx2` existe (o pacote `mcp` depende dele), mas o auth do
+Pipefy é construído sobre `httpx.Auth`: classes distintas, o `httpx2.AsyncClient` recusa o objeto.
+Aliasar `httpx2 -> httpx` globalmente **não** serve: o `mcp` usa `EventSource`/`ServerSentEvent`
+do `httpx2` e falha com `ImportError` no primeiro restart. Correção (em `run_server.py`, usado
+por `start.sh`): redirecionar **só** o `gql.transport.httpx` para o `httpx` puro, depois de importar
+o `pipefy_mcp`. Depois de qualquer fix de dependências, teste `fly machines restart <id>`.
+
+## Troubleshooting rápido
+| Sintoma | Causa provável | Ação |
+|---|---|---|
+| 401 após o login | Resource Indicator do WorkOS ≠ `MCP_PUBLIC_URL` | Igualar as duas URLs |
+| 403 + `usuario nao permitido` | Token sem a claim da allowlist | `MCP_ALLOWED_SUBS` com o `sub` do log |
+| `Invalid "auth" argument` | Conflito gql ↔ httpx2 | Usar `run_server.py` |
+| `ImportError: EventSource` | Alias global de httpx2 | Redirecionar só o gql |
+| Não sobe / credenciais | `PIPEFY_SERVICE_ACCOUNT_*` inválido | Conferir a service account |
+| `pip` não acha o pacote | Python < 3.11 | Usar 3.11+ |
+
+## Limitação: máquinas trial do Fly
+Sem cartão cadastrado, a máquina para após ~5 min (`Trial machine stopping`) e volta na próxima
+requisição (cold start). Cadastrar um cartão elimina isso.
+
+Notas:
+- `fly auth login` exige terminal interativo. Em automação, use `fly tokens create` + `FLY_API_TOKEN`.
+- Nunca cole `PIPEFY_SERVICE_ACCOUNT_CLIENT_SECRET` em chat/log: use `fly secrets set` no terminal.
+- Versões observadas (betas, podem mudar): pipefy-mcp-server 0.5.2b1, mcp 2.0.1, gql 4.4.0,
+  httpx 0.28.1, httpx2 2.13.1, httpx-auth 0.23.1. Exige Python ≥ 3.11.
+
 ## Segurança / notas
 - O proxy valida assinatura (JWKS), `iss`, `aud`, `exp` e a lista de permitidos. O upstream nunca é exposto.
 - Perfil `local` do toolkit (o `remote` exige OAuth por requisição): todas as chamadas usam a

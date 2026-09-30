@@ -3,7 +3,7 @@ ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --pre -r requirements.txt
-COPY proxy.py start.sh ./
+COPY proxy.py run_server.py start.sh ./
 RUN useradd -m app && chmod +x start.sh
 USER app
 EXPOSE 8080

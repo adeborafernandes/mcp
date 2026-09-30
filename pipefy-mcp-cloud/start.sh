@@ -8,7 +8,7 @@ export PIPEFY_MCP_HOST=127.0.0.1
 export PIPEFY_MCP_PORT=8000
 export PIPEFY_MCP_PROFILE="${PIPEFY_MCP_PROFILE:-local}"
 
-pipefy-mcp-server &
+python3 run_server.py &
 MCP_PID=$!
 trap 'kill $MCP_PID 2>/dev/null' EXIT
 
