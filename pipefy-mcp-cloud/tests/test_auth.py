@@ -95,3 +95,9 @@ def test_fail_closed_without_allowlist(monkeypatch, env):
     p, k = env
     monkeypatch.setattr(p, "OAUTH_ENABLED", False)
     assert call(p, tok(k)).status_code == 401
+
+
+def test_extra_audience(monkeypatch, env):
+    p, k = env
+    monkeypatch.setattr(p, "AUDIENCES", [*p.AUDIENCES, "client_ABC"])
+    assert call(p, tok(k, aud="client_ABC")).status_code == 200

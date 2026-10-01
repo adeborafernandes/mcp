@@ -37,7 +37,10 @@ ALLOWED_SUBS = {v.strip() for v in os.environ.get("MCP_ALLOWED_SUBS", "").split(
 OAUTH_ENABLED = bool(PUBLIC_URL and ISSUER and (ALLOWED_EMAILS or ALLOWED_SUBS))
 
 _origin = "/".join(PUBLIC_URL.split("/", 3)[:3]) if PUBLIC_URL else ""
-AUDIENCES = [a for a in {PUBLIC_URL, _origin, _origin + "/"} if a]
+# Audiências extras (ex.: client_id da aplicação OAuth do WorkOS, quando o cliente não envia
+# o parâmetro `resource` e o token sai com aud = client_id).
+EXTRA_AUDIENCES = [a.strip() for a in os.environ.get("MCP_EXTRA_AUDIENCES", "").split(",") if a.strip()]
+AUDIENCES = [a for a in {PUBLIC_URL, _origin, _origin + "/", *EXTRA_AUDIENCES} if a]
 METADATA_URL = (
     f"{_origin}/.well-known/oauth-protected-resource"
     + ("/" + PUBLIC_URL.split("/", 3)[3] if PUBLIC_URL.count("/") >= 3 else "")
@@ -78,7 +81,13 @@ def check_jwt(token: str) -> tuple[bool, str]:
             options={"require": ["exp", "iss", "aud", "sub"]},
         )
     except Exception as exc:  # assinatura, expiração, iss, aud, JWKS inacessível
-        log.warning("jwt rejeitado: %s", exc.__class__.__name__)
+        # aud/iss não são segredos: ajudam a diagnosticar sem expor o token.
+        try:
+            raw = jwt.decode(token, options={"verify_signature": False})
+            seen = f"aud={raw.get('aud')} iss={raw.get('iss')}"
+        except Exception:
+            seen = "token nao e um JWT"
+        log.warning("jwt rejeitado: %s (%s)", exc.__class__.__name__, seen)
         return False, "token invalido"
     sub = str(claims.get("sub", ""))
     email = str(claims.get("email", "")).lower()
@@ -103,6 +112,8 @@ async def resource_metadata(_: Request) -> Response:
 
 
 async def proxy(request: Request) -> Response:
+    log.warning("req %s %s auth=%s", request.method, request.url.path,
+                "sim" if request.headers.get("authorization") else "nao")
     header = request.headers.get("authorization", "")
     scheme, _, token = header.partition(" ")
     if scheme.lower() != "bearer" or not token:

@@ -84,3 +84,11 @@ Notas:
   `PIPEFY_MCP_TOOLSETS` para limitar. Rotacione as credenciais periodicamente.
 - O servidor mantém sessão (`mcp-session-id`): rode **1 máquina** no Fly.
 - Pacote em pré-release (`0.5.2b1`), por isso `pip install --pre`.
+
+## Gemini Enterprise
+O Gemini exige registro manual do cliente OAuth. No WorkOS: **Connect → Applications → OAuth**, redirect
+`https://vertexaisearch.cloud.google.com/oauth-redirect`. No formulário do Gemini: Authorization URL
+`<AUTHKIT>/oauth2/authorize`, Token URL `<AUTHKIT>/oauth2/token`, Auth URL Parameter
+`&resource=<MCP_PUBLIC_URL>`, scopes `openid profile email offline_access`, PKCE ligado.
+Se o `fly logs` mostrar `InvalidAudienceError (aud=<client_id> ...)`, o token saiu com a audiência do
+cliente: `fly secrets set MCP_EXTRA_AUDIENCES=<client_id>`.
